@@ -1,30 +1,38 @@
 use std::io::{self, BufRead, Write};
-use std::str::from_utf8;
 
 #[derive(Debug)]
 enum Command {
     TurnOn,
     TurnOff,
     SetBrightness(u8),
-    Unknown,
+    Unknown(String),
 }
 
 impl Command {
-    fn from_str(command_str: &str) -> Command {
+    fn from_str(command_str: &str) -> Vec<Command> {
+        let mut commands = Vec::new();
         let parts: Vec<&str> = command_str.split(',').collect();
-        match parts[0] {
-            "TURN_ON" => Command::TurnOn,
-            "TURN_OFF" => Command::TurnOff,
-            "SET_BRIGHTNESS" => {
-                if parts.len() > 1 {
-                    if let Ok(value) = parts[1].parse::<u8>() {
-                        return Command::SetBrightness(value);
+
+        let mut iter = parts.iter();
+        while let Some(part) = iter.next() {
+            match *part {
+                "TURN_ON" => commands.push(Command::TurnOn),
+                "TURN_OFF" => commands.push(Command::TurnOff),
+                "SET_BRIGHTNESS" => {
+                    if let Some(value_str) = iter.next() {
+                        if let Ok(value) = value_str.parse::<u8>() {
+                            commands.push(Command::SetBrightness(value));
+                        } else {
+                            commands.push(Command::Unknown(value_str.to_string()));
+                        }
+                    } else {
+                        commands.push(Command::Unknown("Missing value for SET_BRIGHTNESS".to_string()));
                     }
                 }
-                Command::Unknown
+                _ => commands.push(Command::Unknown(part.to_string())),
             }
-            _ => Command::Unknown,
         }
+        commands
     }
 }
 
@@ -39,8 +47,8 @@ fn handle_command(command: Command) {
         Command::SetBrightness(level) => {
             println!("Setting brightness to {}", level);
         }
-        Command::Unknown => {
-            println!("Unknown command received");
+        Command::Unknown(cmd) => {
+            println!("Unknown command received: {}", cmd);
         }
     }
 }
@@ -63,7 +71,9 @@ fn main() {
             buffer.pop();
         }
 
-        let command = Command::from_str(&buffer);
-        handle_command(command);
+        let commands = Command::from_str(&buffer);
+        for command in commands {
+            handle_command(command);
+        }
     }
 }
