@@ -1,7 +1,7 @@
+use std::fs::File;
+use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::net::TcpStream;
-use std::io::{Read, Write};
-use std::fs::File;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
